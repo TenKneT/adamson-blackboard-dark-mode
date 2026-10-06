@@ -3,6 +3,8 @@
   const key = "adamsonDarkEnabled";
   const flag = "data-adamson-dark";
   const probe = "data-adm-probing";
+  const pending = "data-adm-pending";
+  const ready = "data-adm-ready";
   const marks = ["data-adm-surface", "data-adm-text", "data-adm-border", "data-adm-before", "data-adm-after"];
   const skip = "script, style, link, meta, img, video, canvas, iframe, object, embed, source, svg, svg *";
   const urgent = new Set();
@@ -25,9 +27,9 @@
 
   function update(elements) {
     const probed = [];
-    // Temporarily suppress existing hints, then retain attributes whose values did not change.
+    // Read the site's colors without loading styles or previous color hints.
     for (const element of elements) {
-      if (marks.some(mark => element.hasAttribute(mark))) {
+      if (!element.hasAttribute(ready) || marks.some(mark => element.hasAttribute(mark))) {
         element.setAttribute(probe, "");
         probed.push(element);
       }
@@ -60,6 +62,7 @@
           if (value === null) element.removeAttribute(marks[i]);
           else element.setAttribute(marks[i], value);
         });
+        if (!element.hasAttribute(ready)) element.setAttribute(ready, "");
       }
     } finally {
       for (const element of probed) element.removeAttribute(probe);
@@ -105,8 +108,12 @@
     background = idleAvailable ? requestIdleCallback(flushBackground, { timeout: 120 }) : setTimeout(flushBackground, 16);
   }
 
-  function queueScan(element) {
+  function queueScan(element, invalidate = false) {
     if (!enabled || !eligible(element)) return;
+    if (invalidate) {
+      element.removeAttribute(ready);
+      for (const child of element.querySelectorAll("[" + ready + "]")) child.removeAttribute(ready);
+    }
     const existing = scans.get(element);
     if (existing) {
       if (existing.started) existing.again = true;
@@ -114,8 +121,12 @@
     }
     for (const [root, scan] of scans) {
       if (!scan.started && root.contains(element)) return;
-      if (!scan.started && element.contains(root)) scans.delete(root);
+      if (!scan.started && element.contains(root)) {
+        root.removeAttribute(pending);
+        scans.delete(root);
+      }
     }
+    element.setAttribute(pending, "");
     scans.set(element, { root: element, started: false, again: false, walker: null });
     scheduleBackground();
   }
@@ -124,7 +135,11 @@
     const elements = new Set();
     while (scans.size && elements.size < 16) {
       const scan = scans.values().next().value;
-      if (!scan.root.isConnected) { scans.delete(scan.root); continue; }
+      if (!scan.root.isConnected) {
+        scan.root.removeAttribute(pending);
+        scans.delete(scan.root);
+        continue;
+      }
       let node;
       if (!scan.started) {
         scan.started = true;
@@ -138,6 +153,7 @@
       } else {
         scans.delete(scan.root);
         if (scan.again) scans.set(scan.root, { root: scan.root, started: false, again: false, walker: null });
+        else scan.root.removeAttribute(pending);
       }
     }
     return [...elements];
@@ -166,6 +182,7 @@
     }
     animation = background = null;
     urgent.clear();
+    for (const root of scans.keys()) root.removeAttribute(pending);
     scans.clear();
   }
 
@@ -183,7 +200,7 @@
     queueScan(root);
     observer ??= new MutationObserver(records => {
       for (const record of records) {
-        if (record.type === "attributes") queueScan(record.target);
+        if (record.type === "attributes") queueScan(record.target, true);
         else for (const node of record.addedNodes) queueScan(node);
       }
     });
