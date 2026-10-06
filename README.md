@@ -6,7 +6,7 @@ I vibe-coded this with OpenAI Codex, then worked through bugs using screenshots 
 
 ## Installation
 
-1. Download and extract the latest extension ZIP.
+1. [Download the extension ZIP](https://github.com/TenKneT/adamson-blackboard-dark-mode/releases/download/1.1.3/adamson-blackboard-oled-v1.1.3.zip) and extract it.
 2. In Firefox, open `about:debugging#/runtime/this-firefox`.
 3. Click **Load Temporary Add-on** and select `manifest.json` from the extracted folder.
 4. Open or refresh Adamson Blackboard.
