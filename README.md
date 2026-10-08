@@ -22,9 +22,3 @@ The extension only runs on `adamson.blackboard.com`. It saves your theme prefere
 External tools, PDFs, and document contents aren't themed. Blackboard updates may break parts of the styling. Other browsers and Firefox for Android haven't been tested.
 
 If something looks wrong or feels slow, open an issue with the page name and a screenshot. Hide any personal information before posting.
-
-## Version 1.1
-
-Adds dark loading styles to reduce white flashes when opening pages or switching sections. Color checks still run in small batches to keep the site responsive. This also includes the fix for the toolbar popup opening as a narrow vertical strip.
-
-Version numbering starts again at 1.1 for this release.
